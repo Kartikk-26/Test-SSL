@@ -1,63 +1,952 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple HTML Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #333;
-            color: white;
-            padding: 1rem 0;
-            text-align: center;
-        }
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            background: white;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-radius: 8px;
-        }
-        h1, p {
-            margin-bottom: 1rem;
-        }
-        footer {
-            text-align: center;
-            padding: 1rem 0;
-            background-color: #333;
-            color: white;
-            margin-top: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Focus | 3D Task Management</title>
+  <style>
+    :root {
+      --primary: #5271ff;
+      --secondary: #ff7d54;
+      --background: #13151a;
+      --surface: #1e2128;
+      --text: #ffffff;
+      --text-secondary: #a0a0a0;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    body {
+      background-color: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      position: relative;
+    }
+    
+    .floating-bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+    
+    .floating-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(5px);
+      opacity: 0.5;
+      animation: float 15s infinite ease-in-out;
+    }
+    
+    .shape-1 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(45deg, var(--primary), transparent);
+      top: -150px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+    
+    .shape-2 {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(45deg, var(--secondary), transparent);
+      bottom: -100px;
+      right: -50px;
+      animation-delay: -5s;
+    }
+    
+    .shape-3 {
+      width: 150px;
+      height: 150px;
+      background: linear-gradient(45deg, #8a2be2, transparent);
+      top: 50%;
+      right: -75px;
+      animation-delay: -10s;
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+      }
+      25% {
+        transform: translateY(-20px) translateX(20px) rotate(5deg);
+      }
+      50% {
+        transform: translateY(10px) translateX(-15px) rotate(-5deg);
+      }
+      75% {
+        transform: translateY(-15px) translateX(-25px) rotate(3deg);
+      }
+    }
+    
+    .card {
+      background-color: var(--surface);
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      height: 600px;
+      overflow: hidden;
+      position: relative;
+      transition: transform 0.5s, box-shadow 0.5s;
+      transform-style: preserve-3d;
+    }
+    
+    .card:hover {
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 80%);
+      transform: rotate(45deg);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    
+    .card:hover::before {
+      opacity: 1;
+    }
+    
+    .card-title {
+      font-size: 24px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      position: relative;
+      padding-bottom: 10px;
+    }
+    
+    .card-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      border-radius: 2px;
+    }
+    
+    .pomodoro-card .card-title::after {
+      background-color: var(--primary);
+    }
+    
+    .todo-card .card-title::after {
+      background-color: var(--secondary);
+    }
+    
+    /* Pomodoro Timer Styles */
+    .timer-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: calc(100% - 60px);
+    }
+    
+    .timer-display {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin-bottom: 30px;
+    }
+    
+    .timer-circle {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(30, 33, 40, 0.8);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      transform: perspective(1000px) rotateX(10deg);
+      transition: transform 0.3s;
+    }
+    
+    .timer-circle:hover {
+      transform: perspective(1000px) rotateX(0deg);
+    }
+    
+    .timer-progress {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: conic-gradient(var(--primary) 0%, transparent 0%);
+      transition: background 0.3s;
+    }
+    
+    .timer-face {
+      width: 85%;
+      height: 85%;
+      background-color: var(--surface);
+      border-radius: 50%;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .timer-time {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+    
+    .timer-label {
+      font-size: 16px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .timer-controls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .timer-button {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      background-color: var(--primary);
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(82, 113, 255, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .timer-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(82, 113, 255, 0.6);
+    }
+    
+    .timer-button:active {
+      transform: translateY(0px);
+      box-shadow: 0 2px 10px rgba(82, 113, 255, 0.4);
+    }
+    
+    .timer-button.secondary {
+      background-color: var(--surface);
+      color: var(--text);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .timer-button.secondary:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .timer-settings {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+    
+    .timer-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .timer-option label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+    
+    .timer-option-value {
+      display: flex;
+      align-items: center;
+    }
+    
+    .timer-option-value span {
+      margin: 0 10px;
+      font-size: 18px;
+      min-width: 30px;
+      text-align: center;
+    }
+    
+    .timer-option-button {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    
+    .timer-option-button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Todo List Styles */
+    .todo-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 60px);
+    }
+    
+    .todo-form {
+      display: flex;
+      margin-bottom: 20px;
+      position: relative;
+      perspective: 1000px;
+    }
+    
+    .todo-input {
+      flex: 1;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-size: 16px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      transform-origin: left center;
+    }
+    
+    .todo-input:focus {
+      outline: none;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      transform: scale(1.02);
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    .todo-submit {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      border: none;
+      background-color: var(--secondary);
+      color: white;
+      margin-left: 10px;
+      cursor: pointer;
+      font-size: 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(255, 125, 84, 0.4);
+    }
+    
+    .todo-submit:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(255, 125, 84, 0.6);
+    }
+    
+    .todo-submit:active {
+      transform: translateY(0px);
+      box-shadow: 0 2px 10px rgba(255, 125, 84, 0.4);
+    }
+    
+    .todo-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    
+    .todo-item {
+      background-color: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.3s, box-shadow 0.3s, opacity 0.3s;
+    }
+    
+    .todo-item:hover {
+      transform: translateY(-5px) translateZ(20px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+    
+    .todo-checkbox {
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background-color: rgba(255, 255, 255, 0.1);
+      margin-right: 15px;
+      cursor: pointer;
+      position: relative;
+      transition: background-color 0.2s;
+    }
+    
+    .todo-checkbox::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      color: var(--text);
+      font-size: 16px;
+      transition: transform 0.2s;
+    }
+    
+    .todo-checkbox:checked {
+      background-color: var(--secondary);
+    }
+    
+    .todo-checkbox:checked::after {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    
+    .todo-text {
+      flex: 1;
+      transition: text-decoration 0.2s, opacity 0.2s;
+    }
+    
+    .todo-checkbox:checked + .todo-text {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+    
+    .todo-actions {
+      display: flex;
+      gap: 10px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .todo-item:hover .todo-actions {
+      opacity: 1;
+    }
+    
+    .todo-action-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    
+    .todo-action-btn:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .todo-action-btn.delete:hover {
+      background-color: rgba(255, 59, 59, 0.4);
+    }
+    
+    /* Empty states */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      opacity: 0.7;
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+    }
+    
+    .empty-state-text {
+      font-size: 18px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+    
+    /* Custom scrollbar */
+    .todo-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .todo-list::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+    
+    .todo-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
+    
+    .todo-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Notifications */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: var(--surface);
+      color: var(--text);
+      padding: 15px 25px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+      z-index: 1000;
+    }
+    
+    .notification.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .notification-icon {
+      font-size: 24px;
+      margin-right: 15px;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      
+      .card {
+        height: 500px;
+      }
+    }
+    
+    /* Animation for adding new todo */
+    @keyframes addTodo {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .todo-item.new {
+      animation: addTodo 0.5s forwards;
+    }
+    
+    /* Animation for completing todo */
+    @keyframes completeTodo {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+    
+    .todo-item.complete {
+      animation: completeTodo 0.5s forwards;
+    }
+
+    /* Animation for starting timer */
+    @keyframes pulseStart {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+    
+    .pulse {
+      animation: pulseStart 0.5s forwards;
+    }
+    
+    /* Settings Panel */
+    .settings-panel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: var(--surface);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+      transition: all 0.3s ease;
+    }
+    
+    .settings-panel:hover {
+      transform: rotate(30deg);
+    }
+    
+    .settings-icon {
+      font-size: 24px;
+      color: var(--text);
+    }
+    
+    .settings-menu {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background-color: var(--surface);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+      width: 280px;
+      transform: translateX(320px);
+      transition: transform 0.3s ease;
+    }
+    
+    .settings-menu.open {
+      transform: translateX(0);
+    }
+    
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .settings-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .settings-close {
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+    
+    .settings-section {
+      margin-bottom: 15px;
+    }
+    
+    .settings-section-title {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    
+    .settings-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .settings-option-label {
+      flex: 1;
+      font-size: 14px;
+    }
+    
+    .settings-toggle {
+      position: relative;
+      width: 40px;
+      height: 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      cursor: pointer;
+    }
+    
+    .settings-toggle::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: var(--text);
+      left: 2px;
+      top: 2px;
+      transition: transform 0.2s;
+    }
+    
+    .settings-toggle.active {
+      background-color: var(--primary);
+    }
+    
+    .settings-toggle.active::after {
+      transform: translateX(20px);
+    }
+    
+    .settings-button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background-color: var(--primary);
+      color: white;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.2s;
+    }
+    
+    .settings-button:hover {
+      background-color: #6a85ff;
+    }
+    
+    .settings-button.danger {
+      background-color: #e53935;
+    }
+    
+    .settings-button.danger:hover {
+      background-color: #f44336;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 </head>
 <body>
-
-<header>
-    <h1>Welcome to My Simple HTML Page</h1>
-</header>
-
-<div class="container">
-    <h2>About This Page</h2>
-    <p>This is a basic webpage created using HTML and CSS. It has a header, content section, and footer.</p>
+  <div class="container">
+    <div class="floating-bg">
+      <div class="floating-shape shape-1"></div>
+      <div class="floating-shape shape-2"></div>
+      <div class="floating-shape shape-3"></div>
+    </div>
     
-    <h3>Features:</h3>
-    <ul>
-        <li>Responsive Design</li>
-        <li>Minimalistic Layout</li>
-        <li>Clean Code</li>
-    </ul>
-</div>
+    <div class="card pomodoro-card">
+      <h2 class="card-title">Pomodoro Timer</h2>
+      <div class="timer-container">
+        <div class="timer-display">
+          <div class="timer-circle">
+            <div class="timer-progress" id="timer-progress"></div>
+            <div class="timer-face">
+              <div class="timer-time" id="timer-time">25:00</div>
+              <div class="timer-label" id="timer-label">Focus</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="timer-controls">
+          <button class="timer-button secondary" id="timer-reset">
+            <i>↺</i>
+          </button>
+          <button class="timer-button" id="timer-start">
+            <i>▶</i>
+          </button>
+          <button class="timer-button secondary" id="timer-skip">
+            <i>→</i>
+          </button>
+        </div>
+        
+        <div class="timer-settings">
+          <div class="timer-option">
+            <label>Focus</label>
+            <div class="timer-option-value">
+              <button class="timer-option-button" id="focus-minus">-</button>
+              <span id="focus-value">25</span>
+              <button class="timer-option-button" id="focus-plus">+</button>
+            </div>
+          </div>
+          <div class="timer-option">
+            <label>Short Break</label>
+            <div class="timer-option-value">
+              <button class="timer-option-button" id="short-minus">-</button>
+              <span id="short-value">5</span>
+              <button class="timer-option-button" id="short-plus">+</button>
+            </div>
+          </div>
+          <div class="timer-option">
+            <label>Long Break</label>
+            <div class="timer-option-value">
+              <button class="timer-option-button" id="long-minus">-</button>
+              <span id="long-value">15</span>
+              <button class="timer-option-button" id="long-plus">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card todo-card">
+      <h2 class="card-title">Task List</h2>
+      <div class="todo-container">
+        <form class="todo-form" id="todo-form">
+          <input type="text" class="todo-input" id="todo-input" placeholder="Add a new task...">
+          <button type="submit" class="todo-submit">+</button>
+        </form>
+        
+        <div class="todo-list" id="todo-list">
+          <!-- Tasks will be added here dynamically -->
+          <div class="empty-state" id="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <div class="empty-state-text">Your task list is empty. Add some tasks to get started!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Settings Panel -->
+  <div class="settings-panel" id="settings-toggle">
+    <div class="settings-icon">⚙️</div>
+  </div>
+  
+  <div class="settings-menu" id="settings-menu">
+    <div class="settings-header">
+      <div class="settings-title">Settings</div>
+      <div class="settings-close" id="settings-close">×</div>
+    </div>
+    
+    <div class="settings-section">
+      <div class="settings-section-title">Notifications</div>
+      <div class="settings-option">
+        <div class="settings-option-label">Sound Notifications</div>
+        <div class="settings-toggle active" id="sound-toggle"></div>
+      </div>
+      <div class="settings-option">
+        <div class="settings-option-label">Desktop Notifications</div>
+        <div class="settings-toggle" id="desktop-toggle"></div>
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <div class="settings-section-title">Data</div>
+      <button class="settings-button" id="export-data">Export Data</button>
+      <button class="settings-button" id="import-data">Import Data</button>
+      <button class="settings-button danger" id="clear-data">Clear All Data</button>
+    </div>
+  </div>
+  
+  <!-- Notification -->
+  <div class="notification" id="notification">
+    <div class="notification-icon">🔔</div>
+    <div class="notification-message" id="notification-message"></div>
+  </div>
 
-<footer>
-    <p>&copy; 2025 My Simple Page. All rights reserved.</p>
-</footer>
-
-</body>
-</html>
+  <script>
+    // DOM Elements
+    const timerTimeElement = document.getElementById('timer-time');
+    const timerLabelElement = document.getElementById('timer-label');
+    const timerProgressElement = document.getElementById('timer-progress');
+    const timerStartButton = document.getElementById('timer-start');
+    const timerResetButton = document.getElementById('timer-reset');
+    const timerSkipButton = document.getElementById('timer-skip');
+    
+    const focusMinusButton = document.getElementById('focus-minus');
+    const focusPlusButton = document.getElementById('focus-plus');
+    const focusValueElement = document.getElementById('focus-value');
+    
+    const shortMinusButton = document.getElementById('short-minus');
+    const shortPlusButton = document.getElementById('short-plus');
+    const shortValueElement = document.getElementById('short-value');
+    
+    const longMinusButton = document.getElementById('long-minus');
+    const longPlusButton = document.getElementById('long-plus');
+    const longValueElement = document.getElementById('long-value');
+    
+    const todoForm = document.getElementById('todo-form');
+    const todoInput = document.getElementById('todo-input');
+    const todoList = document.getElementById('todo-list');
+    const emptyState = document.getElementById('empty-state');
+    
+    const settingsToggle = document.getElementById('settings-toggle');
+    const settingsMenu = document.getElementById('settings-menu');
+    const settingsClose = document.getElementById('settings-close');
+    const soundToggle = document.getElementById('sound-toggle');
+    const desktopToggle = document.getElementById('desktop-toggle');
+    const exportDataButton = document.getElementById('export-data');
+    const importDataButton = document.getElementById('import-data');
+    const clearDataButton = document.getElementById('clear-data');
+    
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.getElementById('notification-message');
+    
+    // Initialize Settings from LocalStorage
+    let settings = {
+      soundEnabled: true,
+      desktopEnabled: false
+    };
+    
+    // Pomodoro Timer State
+    let timerState = {
+      focusTime: 25,
+      shortBreakTime: 5,
+      longBreakTime: 15,
+      currentMode: 'focus', // 'focus', 'shortBreak', 'longBreak'
+      currentTime: 25 * 60, // in seconds
+      initialTime: 25 * 60,
+      isRunning: false,
+      interval: null,
+      pomodoros: 0,
+    };
+    
+    // Todo List State - Initialize empty array
+    let todos = [];
+    
+    // Load data from localStorage
+    function loadFromLocalStorage() {
+      // Load settings
+      const savedSettings = localStorage.getItem('pomoSettings');
+      if (savedSettings) {
+        settings = JSON.parse(savedSettings);
+        
+        // Update UI to reflect settings
+        soundToggle.classList.toggle('active', settings.soundEnabled);
+        desktopToggle.classList.toggle('active', settings.desktopEnabled);
+      }
+      
+      // Load timer settings
+      const savedTimerState = localStorage.getItem('pomoTimerState');
+      if (savedTimerState) {
+        const parsedTimerState = JSON.parse(savedTimerState);
+        
+        // Only load certain properties, not the running state
+        timerState.focusTime = parsedTimerState.focusTime;
+        timerState.shortBreakTime = parsedTimerState.shortBreakTime;
+        timerState.longBreakTime = parsedTimerState.longBreakTime;
